@@ -28,8 +28,8 @@ class CheckoutTest extends TestCase
         ]);
 
         $response = $this->postJson('/api/orders', [
-            'customer_name'  => 'Budi Santoso',
-            'customer_email' => 'budi@example.com',
+            'customer_name'  => 'Rafi Putra P',
+            'customer_email' => 'rafi@example.com',
             'customer_phone' => '081234567890',
             'items'          => [
                 ['product_id' => $earbuds->id, 'quantity' => 2],
@@ -39,7 +39,7 @@ class CheckoutTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.customer_name', 'Budi Santoso')
+            ->assertJsonPath('data.customer_name', 'Rafi Putra P')
             ->assertJsonPath('data.total_amount', 900000)
             ->assertJsonPath('data.status', 'pending')
             ->assertJsonCount(2, 'data.items');

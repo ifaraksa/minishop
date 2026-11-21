@@ -195,8 +195,8 @@ Seluruh respons memakai format konsisten dari `ApiResponse`:
 Request:
 ```json
 {
-  "customer_name": "Budi Santoso",
-  "customer_email": "budi@example.com",
+  "customer_name": "Rafi Putra P",
+  "customer_email": "rafi@example.com",
   "customer_phone": "081234567890",
   "items": [
     { "product_id": 1, "quantity": 2 }
@@ -212,8 +212,8 @@ Response (`201 Created`):
   "data": {
     "id": 1,
     "order_number": "ORD-20261121-AB12CD",
-    "customer_name": "Budi Santoso",
-    "customer_email": "budi@example.com",
+    "customer_name": "Rafi Putra P",
+    "customer_email": "rafi@example.com",
     "customer_phone": "081234567890",
     "total_amount": 698000,
     "status": "pending",

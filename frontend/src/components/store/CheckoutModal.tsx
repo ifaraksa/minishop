@@ -192,7 +192,7 @@ export function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutModalProps
                     maxLength={100}
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Budi Santoso"
+                    placeholder="Rafi Putra P"
                     className="mt-1.5 w-full rounded-[2px] border border-[#1A1A18]/20 bg-[#FAF9F6] px-3.5 py-2.5 text-[14px] text-[#1A1A18] placeholder:text-[#9A978E] transition-colors focus:border-[#1A1A18] focus:outline-none"
                   />
                   {fieldErrors.customer_name && (
@@ -214,7 +214,7 @@ export function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutModalProps
                     maxLength={150}
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
-                    placeholder="budi@email.com"
+                    placeholder="rafi@email.com"
                     className="mt-1.5 w-full rounded-[2px] border border-[#1A1A18]/20 bg-[#FAF9F6] px-3.5 py-2.5 text-[14px] text-[#1A1A18] placeholder:text-[#9A978E] transition-colors focus:border-[#1A1A18] focus:outline-none"
                   />
                   {fieldErrors.customer_email && (
