@@ -43,5 +43,20 @@ return Application::configure(basePath: dirname(__DIR__))
         $request->is('api/*')
             ? ApiResponse::error(config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan pada server', 'SERVER_ERROR', 500)
             : null);
+    $exceptions->render(function (\Throwable $e, Request $request) {
+    if (! $request->is('api/*')) {
+        return null;
+    }
+
+    if ($e instanceof HttpExceptionInterface) {
+        return ApiResponse::error($e->getMessage() ?: 'Request tidak valid', 'HTTP_ERROR', $e->getStatusCode());
+    }
+
+    return ApiResponse::error(
+        config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan pada server',
+        'SERVER_ERROR',
+        500,
+    );
+});
     })
     ->create();
