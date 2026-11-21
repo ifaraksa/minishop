@@ -1,52 +1,55 @@
 # AI Usage Documentation
 
-Dokumen ini menjelaskan penggunaan AI coding assistant selama pengerjaan case study **MiniShop**.
+Dokumen ini mendokumentasikan pemanfaatan *AI coding assistant* selama pengembangan studi kasus **MiniShop — Product Catalog & Cart** secara transparan, termasuk cakupan penggunaan, contoh prompt pada bagian krusial, keputusan teknis yang diambil, serta verifikasi manual yang dilakukan.
 
 ---
 
-## 1. Tools AI yang Dipakai
+## 1. Tools AI yang Digunakan
 
-- **Antigravity (Google DeepMind AI Coding Assistant)** — digunakan untuk review struktur backend, perbaikan bug & penulisan PHPUnit Feature Tests, perancangan serta implementasi antarmuka frontend (React + TypeScript + Tailwind CSS), pembuatan 12 foto dummy produk bergaya studio MUJI (`backend/public/images/products/`), hingga penyusunan dokumentasi proyek.
+| Tool | Peran & Cakupan Penggunaan |
+|---|---|
+| **Antigravity (Google DeepMind AI Coding Assistant)** | Audit arsitektur backend, perbaikan *exception handling*, penulisan *PHPUnit Feature Tests*, perancangan sistem desain dan implementasi frontend (React, TypeScript, Tailwind CSS, Framer Motion), serta penyusunan dokumentasi teknis. |
+| **Antigravity Image Generator** | Pembuatan 12 aset foto produk bergaya studio minimalis (`backend/public/images/products/*.jpg`) agar gambar katalog sesuai dengan masing-masing judul produk. |
 
 ---
 
-## 2. Contoh Prompt untuk Bagian Krusial
+## 2. Contoh Prompt pada Bagian Krusial
 
-### A. Review Arsitektur Backend, Exception Handling, dan Feature Tests
+### A. Konsistensi Transaksi Checkout & Manajemen Status Order (Backend)
 
 > **Prompt:**
-> *"Aku baru selesai backend-nya. Menurutmu struktur folder dan file-nya sudah bagus atau ada kekurangan terhadap case study MiniShop ini? Kalau ada bug atau kekurangan, tolong bereskan perbaikan backend dan buatkan Feature Test singkat untuk alur katalog, checkout (termasuk validasi stok kurang 409), dan admin CRUD."*
+> *"Audit implementasi backend Laravel untuk alur checkout dan manajemen order. Pastikan proses pengurangan stok berjalan atomik di dalam database transaction dengan row-level locking (`lockForUpdate()` yang diurutkan berdasarkan `product_id` untuk mencegah deadlock), seluruh harga dihitung dari database, serta kembalikan error HTTP `409 INSUFFICIENT_STOCK` yang merinci item bermasalah jika stok tidak mencukupi. Tambahkan pula endpoint `PATCH /api/admin/orders/{order}/status` yang otomatis mengembalikan stok produk apabila pesanan dibatalkan (`cancelled`), lengkap dengan PHPUnit Feature Test."*
 
-**Hasil & Keputusan Teknis yang Diambil:**
-- Menemukan dan memperbaiki duplikasi handler `\Throwable` serta *missing import* `HttpExceptionInterface` di `backend/bootstrap/app.php` yang sebelumnya berisiko mengubah error HTTP (`403`/`405`/`429`) menjadi `500 SERVER_ERROR`.
-- Memastikan kompatibilitas migrasi `CHECK (stock >= 0)` antara PostgreSQL dan SQLite in-memory untuk testing, serta menyamakan panjang kolom `image_url` (`500` karakter) dengan validasi `ProductRequest`.
-- Menambahkan 3 suite Feature Test (`CatalogTest`, `CheckoutTest`, `AdminApiTest`) dengan total **13 test (92 assertions)** yang semuanya lulus via PHPUnit.
+**Keputusan Teknis & Implementasi:**
+- Memvalidasi dan menguji `CheckoutService::checkout()` agar seluruh pengecekan stok dilakukan sebelum operasi penulisan, menyimpan *snapshot* `product_name` dan `unit_price` pada `order_items`, lalu mengurangi stok secara atomik.
+- Menambahkan `UpdateOrderStatusRequest` dan `Admin\OrderController::updateStatus()` dengan penguncian baris order + produk (`lockForUpdate()`) untuk mengembalikan stok secara aman saat status berubah menjadi `cancelled`, serta menolak perubahan ulang pada order yang sudah berstatus `cancelled` (`422`).
+- Memperbaiki duplikasi handler `\Throwable` dan *missing import* `HttpExceptionInterface` di `backend/bootstrap/app.php` agar status HTTP (`403`, `404`, `405`, `429`) tidak tertimpa menjadi `500 SERVER_ERROR`.
+- Menyusun 3 suite Feature Test (`CatalogTest`, `CheckoutTest`, `AdminApiTest`) mencakup **13 skenario uji (92 assertions)** yang berjalan di atas SQLite in-memory.
 
-### B. Validasi Stok & Konsistensi Transaksi saat Checkout (`CheckoutService`)
-
-> **Konsep / Prompt yang Diterapkan:**
-> *"Pastikan proses checkout di backend menggunakan database transaction dengan `lockForUpdate()` yang diurutkan berdasarkan `product_id` untuk mencegah deadlock dan race condition saat stok berkurang. Hitung seluruh subtotal dan total langsung dari harga di database (bukan dari payload client), dan lempar custom exception `InsufficientStockException` (HTTP 409) berisi rincian item yang stoknya kurang sebelum mengubah stok apa pun."*
-
-**Hasil & Keputusan Teknis yang Diambil:**
-- `CheckoutService::checkout()` mengunci baris produk (`lockForUpdate()`), memverifikasi stok seluruh item sebelum menulis data, menyimpan snapshot `product_name` & `unit_price` di `order_items`, lalu mengurangi stok secara atomik di dalam satu transaksi database.
-- Di sisi frontend (`CheckoutModal.tsx`), respons `409 INSUFFICIENT_STOCK` di-parse dan ditampilkan secara spesifik per produk lengkap dengan tombol **"Sesuaikan Stok Otomatis"** yang langsung menyelaraskan keranjang dengan stok terbaru.
-
-### C. Perancangan UI/UX Frontend Murni (Non-Template) & Persistensi Cart
+### B. State Management Cart Client-Side, Persistensi, & Validasi Stok (Frontend)
 
 > **Prompt:**
-> *"Desain awal terasa seperti template. Tolong buat ulang desain yang murni terinspirasi MUJI: warna yang tidak bikin sakit mata dengan ciri khas hijau yang tidak terlalu gelap/terang, frameless gallery langsung masuk ke katalog (shop-first), halaman detail produk terpisah agar fokus, filter kategori di sidebar, animasi/transisi yang lebih smooth, dan halaman admin yang fokus operasional bukan seperti toko."*
+> *"Implementasikan `CartContext` berbasis React Context + TypeScript yang tersimpan otomatis di `localStorage` agar tidak hilang saat refresh. Pastikan setiap aksi tambah dan ubah quantity tervalidasi terhadap stok produk terbaru dari API, sinkronkan otomatis ketika katalog dimuat ulang, serta tangani respons `409 INSUFFICIENT_STOCK` saat checkout dengan opsi penyesuaian jumlah keranjang otomatis."*
 
-**Hasil & Keputusan Teknis yang Diambil:**
-- Menerapkan bahasa desain editorial *Warm Editorial Stone* (`#F5F3EE` + `#1A1A18` monochrome + aksen tipis `#4A6B53` pada sinyal konfirmasi, tipografi **Plus Jakarta Sans** + **JetBrains Mono**) dengan ritme baris bergantian **Asimetris 7:5** dan **3-Kolom** yang dipisahkan garis *hairline*, plus mode **Index Ledger** interaktif (*live hover preview*).
-- Menggunakan **Framer Motion** (`layoutId` pada filter kategori, `AnimatePresence`, `whileInView`, easing `cubic-bezier(0.16, 1, 0.3, 1)`, dan `<MotionConfig reducedMotion="user">`) serta ikon `lucide-react` `strokeWidth={1.25}`.
-- Merancang halaman detail produk khusus (`/products/:id`) bergaya *split monograph* dengan efek *progressive optical scroll-blur* (`requestAnimationFrame`) dan *frosted-glass floating quick-buy bar*, serta **Admin Backoffice** terpisah dengan konsol operasional dan *Order Inspector Drawer*.
-- Mengimplementasikan smooth wheel inertia (`useSmoothScroll`), *keep-previous-data* agar filter/pencarian tidak berkedip skeleton, serta `CartContext` yang otomatis tersimpan ke `localStorage` dan menyinkronkan stok terbaru.
+**Keputusan Teknis & Implementasi:**
+- Mengimplementasikan `CartContext` (`frontend/src/context/CartContext.tsx`) dengan *parsing* `localStorage` yang defensif, perhitungan subtotal & total otomatis, pembatasan `quantity <= product.stock`, dan `syncCatalogProducts()` untuk mencegah data stok kedaluwarsa.
+- Menambahkan penanganan khusus `409 INSUFFICIENT_STOCK` di `CheckoutModal.tsx` yang menampilkan daftar produk dengan selisih stok beserta tombol **Sesuaikan Stok Otomatis**.
+
+### C. Sistem Desain Editorial & Pengalaman Interaksi (Frontend UI/UX)
+
+> **Prompt:**
+> *"Rancang antarmuka storefront bergaya editorial minimalis yang nyaman di mata dengan palet Warm Editorial Stone (`#F5F3EE`, `#1A1A18`, `#63625C`) dan aksen konfirmasi hijau redup (`#4A6B53`), tipografi Plus Jakarta Sans + JetBrains Mono, layout katalog asimetris (7:5 bergantian dengan 3 kolom) + mode Index dengan pratinjau foto saat hover, halaman detail produk khusus (`/products/:id`) dengan transisi mulus tanpa kedip skeleton dan efek optical scroll-blur, serta Admin Backoffice yang terpisah secara fungsional untuk pengelolaan inventaris dan alur status pesanan."*
+
+**Keputusan Teknis & Implementasi:**
+- Mengintegrasikan **Framer Motion** (`layoutId` pada filter kategori & tab status, `AnimatePresence`, `whileInView`, `<MotionConfig reducedMotion="user">`) dengan kurva easing `cubic-bezier(0.16, 1, 0.3, 1)`.
+- Meneruskan snapshot produk melalui React Router `state` agar navigasi ke `/products/:id` langsung merender konten tanpa kedip skeleton sementara data stok terbaru dimuat di latar belakang.
 
 ---
 
-## 3. Verifikasi Manual
+## 3. Kepemilikan Kode & Verifikasi Manual
 
-Seluruh kode yang dibantu AI telah diperiksa dan diverifikasi secara langsung:
-- Menjalankan backend test suite (`php vendor/phpunit/phpunit/phpunit` — **13/13 passed, 92 assertions**).
-- Menjalankan TypeScript type-check & production build frontend (`npm run build` — **0 errors**).
-- Menguji langsung seluruh alur di browser lokal (`http://localhost:5173` & `http://localhost:8000`): pencarian, filter kategori, detail produk, keranjang persisten setelah refresh, checkout + pengurangan stok, login admin, CRUD produk, dan inspeksi detail order.
+Seluruh keluaran AI ditinjau, disesuaikan dengan arsitektur proyek, dan diverifikasi secara langsung sebelum dikirim:
+
+1. **Automated Backend Tests:** Menjalankan `php vendor/phpunit/phpunit/phpunit` — seluruh **13/13 tests (92 assertions)** lulus.
+2. **Static Type-Check & Production Build:** Menjalankan `npm run build` (`tsc -b && vite build`) — lulus dengan **0 error**.
+3. **End-to-End Manual Testing di Browser Lokal:** Menguji langsung seluruh alur di `http://localhost:5173` dan `http://localhost:8000`: pencarian produk, filter kategori, mode Galeri & Index, detail produk, persistensi cart setelah refresh, validasi batas stok, checkout + pengurangan stok, login admin, CRUD produk, perubahan status order, serta pembatalan order dengan verifikasi pengembalian stok.

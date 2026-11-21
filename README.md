@@ -1,22 +1,23 @@
 # MiniShop — Product Catalog & Cart
 
-Aplikasi web e-commerce ringkas (**Product Catalog, Client-Side Cart, Checkout, dan Admin Backoffice**) yang dibangun menggunakan **Laravel REST API** dan **React + TypeScript**.
+Aplikasi web e-commerce (**Product Catalog, Client-Side Cart, Checkout, dan Admin Backoffice**) yang dibangun menggunakan **Laravel REST API** dan **React + TypeScript**.
 
 ---
 
 ## 1. Overview Aplikasi
 
-MiniShop terdiri dari dua area utama dengan pengalaman yang dipisahkan secara jelas:
+MiniShop memisahkan pengalaman pelanggan dan operator ke dalam dua area utama:
 
 - **Storefront Pelanggan (`/` & `/products/:id`)**
-  - Katalog produk langsung (*shop-first*) dengan tampilan **Galeri (Frameless)** dan **Daftar**, pencarian nama produk (*debounced*), filter kategori, dan filter ketersediaan stok.
-  - Halaman detail produk khusus (`/products/:id`) dengan deskripsi lengkap, status stok, pemilih jumlah, dan rekomendasi produk satu kategori.
+  - Katalog produk langsung (*shop-first*) dengan tampilan **Galeri Asimetris** (ritme bergantian 2-kolom `7:5` dan 3-kolom `4:5`) serta mode **Index Ledger** interaktif dengan pratinjau foto saat *hover*.
+  - Pencarian produk berdasarkan nama (*debounced* + shortcut `/`), filter kategori (*animated active indicator*), dan filter ketersediaan stok.
+  - Halaman detail produk khusus (`/products/:id`) dengan transisi halus tanpa kedip *skeleton*, efek *optical scroll-blur*, deskripsi lengkap, indikator stok, pemilih jumlah, dan rekomendasi produk satu kategori.
   - **Keranjang Belanja (Slide-Over Drawer)** yang tersimpan otomatis di `localStorage` (*persists across refresh*), kalkulasi subtotal & total otomatis, serta validasi jumlah agar tidak melebihi stok.
-  - **Checkout tanpa payment gateway** dengan validasi stok *real-time* di backend (mendukung penyesuaian stok otomatis jika terjadi error `409 INSUFFICIENT_STOCK`) dan tampilan struk konfirmasi **"Order Berhasil"**.
+  - **Checkout tanpa payment gateway** dengan validasi dan pengurangan stok secara atomik di backend (termasuk penanganan `409 INSUFFICIENT_STOCK` dengan penyesuaian stok otomatis) serta slip konfirmasi **"Order Berhasil"**.
 - **Admin Backoffice (`/admin` & `/admin/login`)**
   - Autentikasi admin menggunakan **Laravel Sanctum** (Bearer token) + middleware role `admin`.
-  - **Inventaris Produk (CRUD):** tambah, edit (dengan *live preview* gambar URL), hapus produk, filter kategori, dan filter cepat stok menipis/habis.
-  - **Pesanan Masuk:** daftar order terbaru + **Order Inspector Drawer** untuk melihat rincian item per pesanan.
+  - **Inventaris Produk (Full CRUD):** tambah, edit (dengan *live preview* gambar URL), hapus produk, filter kategori, serta filter cepat stok menipis/habis.
+  - **Manajemen Pesanan:** daftar order dengan filter status, **Order Detail Drawer** berisi rincian item, pembaruan siklus status (`Menunggu → Diproses → Dikirim → Selesai`), serta pembatalan pesanan (`Dibatalkan`) yang otomatis mengembalikan stok produk.
 
 ---
 
@@ -24,38 +25,44 @@ MiniShop terdiri dari dua area utama dengan pengalaman yang dipisahkan secara je
 
 | Layer | Teknologi | Alasan Pemilihan |
 |---|---|---|
-| **Backend** | **Laravel 13** (PHP 8.3) + **Laravel Sanctum** | Ekosistem REST API yang matang dan cepat dikembangkan (`FormRequest`, `JsonResource`, `DB::transaction`, `lockForUpdate()` untuk mencegah *race condition* stok, serta *built-in* PHPUnit Feature Test). |
-| **Database** | **PostgreSQL** (migrasi juga kompatibel dengan SQLite untuk testing) | Andal untuk transaksi relasional, mendukung *row-level locking* (`SELECT ... FOR UPDATE`), `CHECK (stock >= 0)`, dan *foreign key constraints* (`nullOnDelete` agar histori order tetap utuh saat produk dihapus). |
-| **Frontend** | **React 19 + Vite + TypeScript + Tailwind CSS v4 + Framer Motion + React Router + Lucide Icons** | Ringan, *hot-reload* cepat, *type-safe* mengikuti kontrak JSON backend, responsif, dan transisi editorial berbasis physics yang halus. |
-| **State Cart** | **React Context + `localStorage`** | Sesuai kebutuhan brief (client-side hingga checkout) tanpa overhead tabel cart di server, sekaligus memenuhi bonus persistensi saat halaman di-refresh. |
+| **Backend** | **Laravel 13** (PHP 8.3) + **Laravel Sanctum** | Ekosistem REST API yang matang (`FormRequest`, `JsonResource`, `DB::transaction`, `lockForUpdate()` untuk mencegah *race condition* stok, serta PHPUnit Feature Test bawaan). |
+| **Database** | **PostgreSQL** (migrasi kompatibel dengan SQLite untuk automated test) | Andal untuk transaksi relasional, mendukung *row-level locking* (`SELECT ... FOR UPDATE`), `CHECK (stock >= 0)`, dan `nullOnDelete` agar histori order tetap utuh saat produk dihapus. |
+| **Frontend** | **React 19 + Vite + TypeScript + Tailwind CSS v4 + Framer Motion + React Router + Lucide Icons** | Ringan, *type-safe* mengikuti kontrak JSON backend, responsif dari mobile hingga desktop lebar, dan transisi antarmuka berbasis *physics* yang halus. |
+| **State Cart** | **React Context + `localStorage`** | Sesuai kebutuhan brief (*client-side* hingga checkout) tanpa overhead tabel cart di server, sekaligus memenuhi bonus persistensi saat halaman di-refresh. |
 
 ### Struktur Proyek
 
 ```text
 minishop/
-├── backend/                # Laravel 13 REST API
+├── backend/                        # Laravel 13 REST API
 │   ├── app/
-│   │   ├── Exceptions/     # InsufficientStockException
+│   │   ├── Exceptions/             # InsufficientStockException
 │   │   ├── Http/
-│   │   │   ├── Controllers/Api/         # Public & Admin controllers
+│   │   │   ├── Controllers/Api/    # Public & Admin controllers
 │   │   │   ├── Middleware/EnsureAdmin.php
-│   │   │   ├── Requests/                # FormRequest validations
-│   │   │   └── Resources/               # JSON response transformers
-│   │   ├── Models/         # Category, Product, Order, OrderItem, User
-│   │   ├── Services/       # CheckoutService (transaction & stock locking)
-│   │   └── Support/        # ApiResponse helper
+│   │   │   ├── Requests/           # FormRequest validations
+│   │   │   └── Resources/          # JSON response transformers
+│   │   ├── Models/                 # Category, Product, Order, OrderItem, User
+│   │   ├── Services/               # CheckoutService (transaction & stock locking)
+│   │   └── Support/                # ApiResponse helper
 │   ├── database/
 │   │   ├── migrations/
-│   │   └── seeders/        # AdminSeeder, CategorySeeder, ProductSeeder (12 produk)
-│   └── tests/Feature/      # CatalogTest, CheckoutTest, AdminApiTest
-├── frontend/               # React + Vite + TypeScript SPA
-│   └── src/
-│       ├── api/            # HTTP client & modular endpoints
-│       ├── components/     # Storefront, Admin, dan UI primitives
-│       ├── context/        # CartContext (localStorage), AuthContext, ToastContext
-│       ├── pages/          # CatalogPage, ProductDetailPage, AdminLoginPage, AdminDashboardPage
-│       ├── types/
-│       └── utils/
+│   │   └── seeders/                # AdminSeeder, CategorySeeder, ProductSeeder (12 produk)
+│   ├── docker/start.sh             # Startup script container (migrate, seed, Apache)
+│   ├── public/images/products/     # 12 foto studio produk
+│   ├── tests/Feature/              # CatalogTest, CheckoutTest, AdminApiTest
+│   └── Dockerfile                  # Siap deploy ke Render / Railway
+├── frontend/                       # React + Vite + TypeScript SPA
+│   ├── public/_redirects           # SPA rewrite untuk Netlify
+│   ├── src/
+│   │   ├── api/                    # HTTP client & modular endpoints
+│   │   ├── components/             # Storefront, Admin, dan UI primitives
+│   │   ├── context/                # CartContext (localStorage), AuthContext, ToastContext
+│   │   ├── hooks/                  # useSmoothScroll
+│   │   ├── pages/                  # CatalogPage, ProductDetailPage, AdminLoginPage, AdminDashboardPage
+│   │   ├── types/
+│   │   └── utils/                  # format, motion, orderStatus
+│   └── vercel.json                 # SPA rewrite untuk Vercel
 ├── README.md
 └── AI_USAGE.md
 ```
@@ -78,7 +85,7 @@ composer install
 cp .env.example .env
 ```
 
-Sesuaikan kredensial PostgreSQL di `backend/.env` (contoh):
+Sesuaikan kredensial PostgreSQL di `backend/.env`:
 
 ```env
 DB_CONNECTION=pgsql
@@ -89,7 +96,7 @@ DB_USERNAME=postgres
 DB_PASSWORD=your_password
 ```
 
-Lalu generate key, jalankan migrasi + seeder, dan nyalakan server:
+Generate application key, jalankan migrasi beserta seeder, lalu jalankan server:
 
 ```bash
 php artisan key:generate
@@ -99,7 +106,7 @@ php artisan serve
 
 Seeder otomatis mengisi:
 - **5 kategori** (`Elektronik`, `Fashion`, `Rumah Tangga`, `Buku`, `Olahraga`)
-- **12 produk dummy** (termasuk *edge case* produk stok `0` dan stok tipis `3` untuk menguji validasi stok)
+- **12 produk dummy** dengan foto studio lokal (termasuk *edge case* produk stok `0` dan stok tipis `3` untuk menguji validasi stok)
 - **Akun Demo Admin:**
   - Email: `admin@minishop.test`
   - Password: `admin12345`
@@ -122,7 +129,7 @@ Akses aplikasi di browser:
 ### C. Menjalankan Automated Test & Build Check
 
 ```bash
-# Backend Feature Tests (13 tests — SQLite in-memory)
+# Backend Feature Tests (13 tests, 92 assertions — SQLite in-memory)
 cd backend
 php artisan test
 
@@ -137,7 +144,7 @@ npm run build
 
 Base URL lokal: `http://localhost:8000/api`
 
-Semua respons menggunakan format seragam dari `ApiResponse`:
+Seluruh respons memakai format konsisten dari `ApiResponse`:
 - **Sukses:** `{ "success": true, "message": "...", "data": ..., "meta": {} }`
 - **Error:** `{ "success": false, "message": "...", "code": "ERROR_CODE", "errors": {} }`
 
@@ -240,6 +247,31 @@ Response bila stok tidak mencukupi (`409 Conflict`):
 }
 ```
 
+#### `PATCH /api/admin/orders/{id}/status`
+
+Request (`Authorization: Bearer <token>`):
+```json
+{
+  "status": "processing"
+}
+```
+
+Response (`200 OK`):
+```json
+{
+  "success": true,
+  "message": "Status order diperbarui",
+  "data": {
+    "id": 1,
+    "order_number": "ORD-20261121-AB12CD",
+    "status": "processing",
+    "total_amount": 698000,
+    "items_count": 1
+  },
+  "meta": {}
+}
+```
+
 #### `POST /api/auth/login`
 
 Request:
@@ -267,8 +299,8 @@ Response (`200 OK`):
 
 ## 5. Known Limitations
 
-- **Tanpa Payment Gateway:** Checkout langsung mencatat order dengan status `pending` sesuai ruang lingkup case study (status dapat diperbarui dari Admin Backoffice).
-- **Gambar Produk Menggunakan URL:** Input gambar di form admin menerima URL gambar (`image_url`), belum mendukung upload file langsung ke local storage atau object storage (S3/R2).
-- **Kategori Belum CRUD di Admin UI:** Daftar kategori diisi melalui seeder (`CategorySeeder`) dan belum memiliki halaman manajemen khusus di admin.
-- **Guest Checkout:** Autentikasi hanya diterapkan untuk Admin Backoffice; pelanggan dapat langsung berbelanja dan checkout tanpa registrasi akun.
-- **Belum Dideploy ke Production:** Fokus pengerjaan diprioritaskan pada kualitas arsitektur backend, validasi transaksi/stok, desain UI/UX, serta kelancaran setup lokal.
+- **Tanpa Payment Gateway:** Checkout langsung mencatat order dengan status awal `pending` sesuai ruang lingkup case study, lalu status dapat diproses atau dibatalkan melalui Admin Backoffice.
+- **Gambar Produk Menggunakan URL:** Form produk di admin menerima input URL gambar (`image_url`), belum mendukung upload file gambar langsung ke local storage maupun object storage (S3/R2).
+- **Kategori Belum CRUD di Admin UI:** Daftar kategori dikelola melalui seeder (`CategorySeeder`) dan belum memiliki halaman manajemen terpisah di admin.
+- **Guest Checkout:** Autentikasi hanya diterapkan pada Admin Backoffice; pelanggan dapat langsung berbelanja dan checkout tanpa registrasi akun.
+- **Konfigurasi Deployment:** `backend/Dockerfile` (Render/Railway) serta `frontend/vercel.json` & `frontend/public/_redirects` (Vercel/Netlify) telah disediakan; tautan live demo dapat ditambahkan setelah proses deployment selesai.
