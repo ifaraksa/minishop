@@ -12,6 +12,11 @@ class Order extends Model
         'customer_phone', 'total_amount', 'status',
     ];
 
+    protected function casts(): array
+    {
+        return ['total_amount' => 'integer'];
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);

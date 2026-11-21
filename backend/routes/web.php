@@ -1,7 +1,9 @@
 <?php
 
+use App\Support\ApiResponse;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', fn () => ApiResponse::success([
+    'app'    => 'MiniShop API',
+    'status' => 'running',
+]));

@@ -37,6 +37,8 @@ class ProductSeeder extends Seeder
             ],
         ];
 
+        $baseUrl = rtrim((string) config('app.url', 'http://localhost:8000'), '/');
+
         foreach ($catalog as $categorySlug => $items) {
             $categoryId = Category::where('slug', $categorySlug)->value('id');
 
@@ -47,7 +49,7 @@ class ProductSeeder extends Seeder
                     'category_id' => $categoryId,
                     'description' => $description,
                     'price'       => $price,
-                    'image_url'   => 'https://picsum.photos/seed/' . Str::slug($name) . '/600/600',
+                    'image_url'   => $baseUrl . '/images/products/' . Str::slug($name) . '.jpg',
                 ]);
 
                 if (! $product->exists) {

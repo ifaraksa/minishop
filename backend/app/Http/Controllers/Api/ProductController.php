@@ -21,16 +21,9 @@ class ProductController extends Controller
             ->orderBy('name')
             ->paginate($filters['per_page'] ?? 12);
 
-        return ApiResponse::success(
+        return ApiResponse::paginated(
+            $products,
             ProductResource::collection($products->getCollection())->resolve(),
-            'OK',
-            200,
-            [
-                'current_page' => $products->currentPage(),
-                'last_page'    => $products->lastPage(),
-                'per_page'     => $products->perPage(),
-                'total'        => $products->total(),
-            ],
         );
     }
 

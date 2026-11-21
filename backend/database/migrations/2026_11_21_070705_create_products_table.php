@@ -15,13 +15,15 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->unsignedBigInteger('price');
-            $table->string('image_url')->nullable();
+            $table->string('image_url', 500)->nullable();
             $table->unsignedInteger('stock')->default(0);
             $table->timestamps();
         });
 
-        // Jaring pengaman terakhir: database menolak stok negatif
-        DB::statement('ALTER TABLE products ADD CONSTRAINT products_stock_non_negative CHECK (stock >= 0)');
+        // Jaring pengaman terakhir: database menolak stok negatif (SQLite tidak mendukung ALTER TABLE ADD CONSTRAINT)
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement('ALTER TABLE products ADD CONSTRAINT products_stock_non_negative CHECK (stock >= 0)');
+        }
     }
 
     public function down(): void

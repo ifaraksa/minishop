@@ -12,6 +12,15 @@ class OrderItem extends Model
         'unit_price', 'quantity', 'subtotal',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'unit_price' => 'integer',
+            'quantity'   => 'integer',
+            'subtotal'   => 'integer',
+        ];
+    }
+
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
