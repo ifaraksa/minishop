@@ -25,7 +25,7 @@ MiniShop memisahkan pengalaman pelanggan dan operator ke dalam dua area utama:
 
 | Layer | Teknologi | Alasan Pemilihan |
 |---|---|---|
-| **Backend** | **Laravel 13** (PHP 8.3) + **Laravel Sanctum** | Ekosistem REST API yang matang (`FormRequest`, `JsonResource`, `DB::transaction`, `lockForUpdate()` untuk mencegah *race condition* stok, serta PHPUnit Feature Test bawaan). |
+| **Backend** | **Laravel 13** (PHP 8.4+) + **Laravel Sanctum** | Ekosistem REST API yang matang (`FormRequest`, `JsonResource`, `DB::transaction`, `lockForUpdate()` untuk mencegah *race condition* stok, serta PHPUnit Feature Test bawaan). |
 | **Database** | **PostgreSQL** (migrasi kompatibel dengan SQLite untuk automated test) | Andal untuk transaksi relasional, mendukung *row-level locking* (`SELECT ... FOR UPDATE`), `CHECK (stock >= 0)`, dan `nullOnDelete` agar histori order tetap utuh saat produk dihapus. |
 | **Frontend** | **React 19 + Vite + TypeScript + Tailwind CSS v4 + Framer Motion + React Router + Lucide Icons** | Ringan, *type-safe* mengikuti kontrak JSON backend, responsif dari mobile hingga desktop lebar, dan transisi antarmuka berbasis *physics* yang halus. |
 | **State Cart** | **React Context + `localStorage`** | Sesuai kebutuhan brief (*client-side* hingga checkout) tanpa overhead tabel cart di server, sekaligus memenuhi bonus persistensi saat halaman di-refresh. |
@@ -73,7 +73,7 @@ minishop/
 
 ### Prasyarat
 
-- PHP `>= 8.3` & Composer
+- PHP `>= 8.4` & Composer
 - PostgreSQL (buat database kosong bernama `minishop`)
 - Node.js `>= 18` & npm
 
