@@ -2,6 +2,18 @@
 
 Aplikasi web e-commerce (**Product Catalog, Client-Side Cart, Checkout, dan Admin Backoffice**) yang dibangun menggunakan **Laravel REST API** dan **React + TypeScript**.
 
+## Live Demo
+
+| Bagian | URL |
+|---|---|
+| **Frontend (Vercel)** | https://minishop-gamma-woad.vercel.app |
+| **Backend API (Railway)** | https://minishop-production-b21cb31f.up.railway.app/api/products |
+| **Admin Backoffice** | https://minishop-gamma-woad.vercel.app/admin/login |
+
+Akun demo admin: `admin@minishop.test` / `admin12345`
+
+> Backend dan database berjalan di paket gratis Railway, jadi permintaan pertama setelah server lama tidak aktif bisa memerlukan beberapa detik tambahan.
+
 ---
 
 ## 1. Overview Aplikasi
@@ -303,4 +315,4 @@ Response (`200 OK`):
 - **Gambar Produk Menggunakan URL:** Form produk di admin menerima input URL gambar (`image_url`), belum mendukung upload file gambar langsung ke local storage maupun object storage (S3/R2).
 - **Kategori Belum CRUD di Admin UI:** Daftar kategori dikelola melalui seeder (`CategorySeeder`) dan belum memiliki halaman manajemen terpisah di admin.
 - **Guest Checkout:** Autentikasi hanya diterapkan pada Admin Backoffice; pelanggan dapat langsung berbelanja dan checkout tanpa registrasi akun.
-- **Konfigurasi Deployment:** `backend/Dockerfile` (Render/Railway) serta `frontend/vercel.json` & `frontend/public/_redirects` (Vercel/Netlify) telah disediakan; tautan live demo dapat ditambahkan setelah proses deployment selesai.
+- **Hosting Paket Gratis:** Frontend di-deploy ke Vercel, sedangkan backend (Docker) dan PostgreSQL di Railway paket gratis. Server dapat tertidur saat tidak aktif sehingga permintaan pertama sedikit lebih lambat, dan sumber daya (CPU/RAM/kuota bulanan) terbatas.
