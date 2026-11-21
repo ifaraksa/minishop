@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Support\ApiResponse;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\OrderController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -13,3 +14,4 @@ Route::get('/ping', fn () => ApiResponse::success(['app' => 'MiniShop']));
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
+Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:20,1');
