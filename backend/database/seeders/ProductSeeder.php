@@ -41,16 +41,20 @@ class ProductSeeder extends Seeder
             $categoryId = Category::where('slug', $categorySlug)->value('id');
 
             foreach ($items as [$name, $description, $price, $stock]) {
-                Product::updateOrCreate(
-                    ['name' => $name],
-                    [
-                        'category_id' => $categoryId,
-                        'description' => $description,
-                        'price'       => $price,
-                        'stock'       => $stock,
-                        'image_url'   => 'https://picsum.photos/seed/' . Str::slug($name) . '/600/600',
-                    ],
-                );
+                $product = Product::firstOrNew(['name' => $name]);
+
+                $product->fill([
+                    'category_id' => $categoryId,
+                    'description' => $description,
+                    'price'       => $price,
+                    'image_url'   => 'https://picsum.photos/seed/' . Str::slug($name) . '/600/600',
+                ]);
+
+                if (! $product->exists) {
+                    $product->stock = $stock;
+                }
+
+                $product->save();
             }
         }
     }

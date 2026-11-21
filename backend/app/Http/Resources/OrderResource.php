@@ -19,6 +19,7 @@ class OrderResource extends JsonResource
             'status'         => $this->status,
             'created_at'     => $this->created_at?->toIso8601String(),
             'items'          => OrderItemResource::collection($this->whenLoaded('items')),
+            'items_count' => $this->whenCounted('items'),
         ];
     }
 }
